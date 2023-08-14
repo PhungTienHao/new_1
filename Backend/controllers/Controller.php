@@ -4,8 +4,7 @@ class Controller
 {
     public function __construct()
     {
-        // nếu chưa login k cho truy cập vào các trang quản trị
-        // và k phải chức năng login hoặc register
+
         if(!isset($_SESSION['user'])&& $_GET['controller'] != 'user' && !in_array($_GET['action'],['register','login'])){
             $_SESSION['error']=' chưa đăng nhập k thể truy cập';
             header('location:index,php?controller=user&action=login');
@@ -13,11 +12,10 @@ class Controller
         }
     }
 
-    //chứa nội dung view
     public $content;
-    //chứa nội dung lỗi validate
+
     public $error;
-    // Tiêu đề trang
+
     public $page_title;
 
     /**
