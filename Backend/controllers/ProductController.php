@@ -1,95 +1,238 @@
 <?php
 require_once 'controllers/Controller.php';
-require_once 'Models/Product.php';
-// Controller xử lý sp
-class ProductController extends Controller {
+require_once 'models/Product.php';
+require_once 'models/Category.php';
+require_once 'models/Pagination.php';
 
-    // index.php?controller=product&action=create
-    public function create() {
-        // - xử lý form:
-        //Debug:
-        echo '<pre>';
-        print_r($_POST);
-        echo '</pre>';
-        if (isset($_POST['submit'])) {
-            $name = $_POST['name'];
-            $price = $_POST['price'];
-            // Validate:
-            // - Phải nhập tên và giá
-            // - giá phải là số
-            if (empty($name) || empty($price)) {
-                $this->error = 'Phải nhập tên và giá';
-            }elseif (!is_numeric($price)) {
-                $this->error = 'Giá phải là sô';
-            }
-            // Nếu ko có lỗi thì xử lý logic chích
-            if (empty($this->error)) {
-                // - Controller gọi Model để insert vào CSDL = khởi tạo đối tượng từ model
-                $product_model = new Product();
-                $is_insert = $product_model->insertData($name, $price);
-                var_dump($is_insert);
-                if ($is_insert) {
-                    $_SESSION['success'] = 'Thêm mới thành công';
-                    header('Location:index.php?controller=product&action');
-                    exit();
-                }
-            }
+class ProductController extends Controller
+{
+  public function index()
+  {
+      // nếu chưa dn thì chặn
+    $product_model = new Product();
+    $products = $product_model->getAll();
+
+    //lấy danh sách category đang có trên hệ thống để phục vụ cho search
+    $category_model = new Category();
+    $categories = $category_model->getAll();
+
+    $this->content = $this->render('views/products/index.php', [
+        'products' => $products,
+        'categories' => $categories,
+    ]);
+    require_once 'views/layouts/main.php';
+  }
+
+  public function create()
+  {
+    //xử lý submit form
+    if (isset($_POST['submit'])) {
+      $category_id = $_POST['category_id'];
+      $title = $_POST['title'];
+      $price = $_POST['price'];
+      $amount = $_POST['amount'];
+      $summary = $_POST['summary'];
+      $content = $_POST['content'];
+      $seo_title = $_POST['seo_title'];
+      $seo_description = $_POST['seo_description'];
+      $seo_keywords = $_POST['seo_keywords'];
+      $status = $_POST['status'];
+      //xử lý validate
+      if (empty($title)) {
+        $this->error = 'Không được để trống title';
+      } else if ($_FILES['avatar']['error'] == 0) {
+        //validate khi có file upload lên thì bắt buộc phải là ảnh và dung lượng không quá 2 Mb
+        $extension = pathinfo($_FILES['avatar']['name'], PATHINFO_EXTENSION);
+        $extension = strtolower($extension);
+        $arr_extension = ['jpg', 'jpeg', 'png', 'gif'];
+
+        $file_size_mb = $_FILES['avatar']['size'] / 1024 / 1024;
+        //làm tròn theo đơn vị thập phân
+        $file_size_mb = round($file_size_mb, 2);
+
+        if (!in_array($extension, $arr_extension)) {
+          $this->error = 'Cần upload file định dạng ảnh';
+        } else if ($file_size_mb > 2) {
+          $this->error = 'File upload không được quá 2MB';
         }
+      }
 
-     //   echo 'Tạo mới sp';
-        // - Gọi view để hiển thị
-        // + Gán các giá trị tương ứng cho thuộc tính của controller cha
-        $this->page_title = 'Trang tạo thêm mới sp';
-        $this->content = $this->render('views/products/create.php');
-        // var_dump($this->content);
-        // + gọi layout để hiển thị các giá trị lên
-        require_once 'views/layouts/main.php';
-    }
-
-    // index.php?controller=product&action=index
-    public function index() {
-        // - Controller gọi Model
+      //nếu ko có lỗi thì tiến hành save dữ liệu
+      if (empty($this->error)) {
+        $filename = '';
+        //xử lý upload file nếu có
+        if ($_FILES['avatar']['error'] == 0) {
+          $dir_uploads = 'assets/uploads';
+          if (!file_exists($dir_uploads)) {
+            mkdir($dir_uploads);
+          }
+          //tạo tên file theo 1 chuỗi ngẫu nhiên để tránh upload file trùng lặp
+          $filename = time() . '-product-' . $_FILES['avatar']['name'];
+          move_uploaded_file($_FILES['avatar']['tmp_name'], $dir_uploads . '/' . $filename);
+        }
+        //save dữ liệu vào bảng products
         $product_model = new Product();
-        $products = $product_model->getList();
-        echo '<pre>';
-        print_r($products);
-        echo '</pre>';
-
-        // - Controller Gọi View
-        $this->page_title = 'TRang ds sản phẩm';
-        $this->content = $this->render('views/products/index.php', [
-            'products' => $products,
-            'abc' => 123
-        ]);
-        require_once  'views/layouts/main.php';
-    }
-
-    //index.php?controller=product&action=update&id=...
-    public function update() {
-
-    }
-
-    //index.php?controller=product&action=delete&id=...
-    public function delete() {
-        // - Validate id
-        if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
-            $_SESSION['error'] = 'Tham số id ko hợp lệ';
-            header('location:index.php?controller=product&action=index');
-            exit();
+        $product_model->category_id = $category_id;
+        $product_model->title = $title;
+        $product_model->avatar = $filename;
+        $product_model->price = $price;
+        $product_model->amount = $amount;
+        $product_model->summary = $summary;
+        $product_model->content = $content;
+        $product_model->seo_title = $seo_title;
+        $product_model->seo_description = $seo_description;
+        $product_model->seo_keywords = $seo_keywords;
+        $product_model->status = $status;
+        $is_insert = $product_model->insert();
+        if ($is_insert) {
+          $_SESSION['success'] = 'Insert dữ liệu thành công';
+        } else {
+          $_SESSION['error'] = 'Insert dữ liệu thất bại';
         }
-        $id = $_GET['id'];
-        // - Controller gọi Model
-        $product_model = new Product();
-        $is_delete = $product_model->deleteData($id);
-        var_dump($is_delete);
-        if ($is_delete) {
-            $_SESSION['success'] = 'Xóa thành công';
-
-        }else{
-            $_SESSION['error'] = 'Xóa thất bại';
-        }
-        header('location:index.php?controller=product&action=index');
+        header('Location: index.php?controller=product');
         exit();
+      }
     }
+
+    //lấy danh sách category đang có trên hệ thống để phục vụ cho search
+    $category_model = new Category();
+    $categories = $category_model->getAll();
+
+    $this->content = $this->render('views/products/create.php', [
+        'categories' => $categories
+    ]);
+    require_once 'views/layouts/main.php';
+  }
+
+  public function detail()
+  {
+    if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
+      $_SESSION['error'] = 'ID không hợp lệ';
+      header('Location: index.php?controller=product');
+      exit();
+    }
+
+    $id = $_GET['id'];
+    $product_model = new Product();
+    $product = $product_model->getById($id);
+
+    $this->content = $this->render('views/products/detail.php', [
+        'product' => $product
+    ]);
+    require_once 'views/layouts/main.php';
+  }
+
+  public function update()
+  {
+    if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
+      $_SESSION['error'] = 'ID không hợp lệ';
+      header('Location: index.php?controller=product');
+      exit();
+    }
+
+    $id = $_GET['id'];
+    $product_model = new Product();
+    $product = $product_model->getById($id);
+    //xử lý submit form
+    if (isset($_POST['submit'])) {
+      $category_id = $_POST['category_id'];
+      $title = $_POST['title'];
+      $price = $_POST['price'];
+      $amount = $_POST['amount'];
+      $summary = $_POST['summary'];
+      $content = $_POST['content'];
+      $seo_title = $_POST['seo_title'];
+      $seo_description= $_POST['seo_description'];
+      $seo_keywords = $_POST['seo_keywords'];
+      $status = $_POST['status'];
+      //xử lý validate
+      if (empty($title)) {
+        $this->error = 'Không được để trống title';
+      } else if ($_FILES['avatar']['error'] == 0) {
+        //validate khi có file upload lên thì bắt buộc phải là ảnh và dung lượng không quá 2 Mb
+        $extension = pathinfo($_FILES['avatar']['name'], PATHINFO_EXTENSION);
+        $extension = strtolower($extension);
+        $arr_extension = ['jpg', 'jpeg', 'png', 'gif'];
+
+        $file_size_mb = $_FILES['avatar']['size'] / 1024 / 1024;
+        //làm tròn theo đơn vị thập phân
+        $file_size_mb = round($file_size_mb, 2);
+
+        if (!in_array($extension, $arr_extension)) {
+          $this->error = 'Cần upload file định dạng ảnh';
+        } else if ($file_size_mb > 2) {
+          $this->error = 'File upload không được quá 2MB';
+        }
+      }
+
+      //nếu ko có lỗi thì tiến hành save dữ liệu
+      if (empty($this->error)) {
+        $filename = $product['avatar'];
+        //xử lý upload file nếu có
+        if ($_FILES['avatar']['error'] == 0) {
+          $dir_uploads = 'assets/uploads';
+          //xóa file cũ, thêm @ vào trước hàm unlink để tránh báo lỗi khi xóa file ko tồn tại
+          @unlink($dir_uploads . '/' . $filename);
+          if (!file_exists($dir_uploads)) {
+            mkdir($dir_uploads);
+          }
+          //tạo tên file theo 1 chuỗi ngẫu nhiên để tránh upload file trùng lặp
+          $filename = time() . '-product-' . $_FILES['avatar']['name'];
+          move_uploaded_file($_FILES['avatar']['tmp_name'], $dir_uploads . '/' . $filename);
+        }
+        //save dữ liệu vào bảng products
+        $product_model->category_id = $category_id;
+        $product_model->title = $title;
+        $product_model->avatar = $filename;
+        $product_model->price = $price;
+        $product_model->amount = $amount;
+        $product_model->summary = $summary;
+        $product_model->content = $content;
+        $product_model->seo_title = $seo_title;
+        $product_model->seo_description = $seo_description;
+        $product_model->seo_keywords = $seo_keywords;
+        $product_model->status = $status;
+        $product_model->updated_at = date('Y-m-d H:i:s');
+
+        $is_update = $product_model->update($id);
+        if ($is_update) {
+          $_SESSION['success'] = 'Update dữ liệu thành công';
+        } else {
+          $_SESSION['error'] = 'Update dữ liệu thất bại';
+        }
+        header('Location: index.php?controller=product');
+        exit();
+      }
+    }
+
+    //lấy danh sách category đang có trên hệ thống để phục vụ cho search
+    $category_model = new Category();
+    $categories = $category_model->getAll();
+
+    $this->content = $this->render('views/products/update.php', [
+        'categories' => $categories,
+        'product' => $product,
+    ]);
+    require_once 'views/layouts/main.php';
+  }
+
+  public function delete()
+  {
+    if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
+      $_SESSION['error'] = 'ID không hợp lệ';
+      header('Location: index.php?controller=product');
+      exit();
+    }
+
+    $id = $_GET['id'];
+    $product_model = new Product();
+    $is_delete = $product_model->delete($id);
+    if ($is_delete) {
+      $_SESSION['success'] = 'Xóa dữ liệu thành công';
+    } else {
+      $_SESSION['error'] = 'Xóa dữ liệu thất bại';
+    }
+    header('Location: index.php?controller=product');
+    exit();
+  }
 }
-?>
