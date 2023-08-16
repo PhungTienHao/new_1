@@ -7,7 +7,7 @@ class Controller
 
         if(!isset($_SESSION['user'])&& $_GET['controller'] != 'user' && !in_array($_GET['action'],['register','login'])){
             $_SESSION['error']=' chưa đăng nhập k thể truy cập';
-            header('location:index,php?controller=user&action=login');
+            header('location:index.php?controller=user&action=login');
             exit();
         }
     }
