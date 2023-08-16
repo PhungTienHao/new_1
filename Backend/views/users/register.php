@@ -20,20 +20,20 @@
             <input type="text" id="name" name="name" class="form-control">
         </div>
         <div class="form-group">
-            <lable for="phone" > nhập số điện thoại</lable>
+            <label for="phone" > nhập số điện thoại</label>
             <input type="text" id="phone" name="phone" class="form-control">
         </div>
 
         <div class="form-group">
-            <lable for="address" > nhập địa chỉ</lable>
+            <label for="address" > nhập địa chỉ</label>
             <input type="text" id="address" name="address" class="form-control">
         </div>
         <div class="form-group">
-            <lable for="email" > nhập email </lable>
+            <label for="email" > nhập email </label>
             <input type="email" id="email" name="email" class="form-control">
         </div>
         <div class="form-group">
-            <lable for="avatar" >Chọn Ảnh Đại Diện của bạn</lable>
+            <label for="avatar" >Chọn Ảnh Đại Diện của bạn</label>
             <input type="file" id="avatar" name="avatar" class="form-control">
         </div>
 

@@ -2,12 +2,17 @@
 require_once 'models/Model.php';
 
 class User extends Model {
-    public function registerUser($username,$pass_hash){
-        $sql_insert = "insert into users(username,password) values (:username,:password)";
+    public function registerUser($username,$pass_hash,$name,$phone,$address,$email,$filename){
+        $sql_insert = "insert into users(username,password,name,phone,address,email,avatar) values (:username,:password,:name,:phone,:address,:email,:filename)";
         $obj_insert = $this->connection->prepare($sql_insert);
         $inserts = [
             ':username' => $username,
-            ':password' => $pass_hash
+            ':password' => $pass_hash,
+            ':name'=>$name,
+            ':phone'=>$phone,
+            ':address'=>$address,
+            ':email'=>$email,
+            ':filename'=>$filename
         ];
         $is_register = $obj_insert->execute($inserts);
         return $is_register;
