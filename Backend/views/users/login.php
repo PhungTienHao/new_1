@@ -12,7 +12,7 @@
             <input type="password" id="password" name="password" class="form-control"> </div>
         <div class="form-group">
             <input type="checkbox" >Ghi Nhớ Đăng Nhập <br>
-            <input type="submit" name="submit" value="đăng ký" class="btn btn-success">
+            <input type="submit" name="submit" value="đăng nhập" class="btn btn-success">
             chưa có tài khoản , đăng ký tại <a href="index.php?controller=user&action=register">đây</a>
         </div>
     </form>

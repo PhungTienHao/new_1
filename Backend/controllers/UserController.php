@@ -17,7 +17,6 @@ public function register(){
         $email = $_POST['email'];
         $avatar = $_FILES['avatar'];
 
-
         if(empty($username)||empty($password)||empty($name)||empty($phone)||empty($address)||empty($email)){
             $this->error='phải nhập đầy đủ thông tin';
         }elseif($password != $repas){
