@@ -69,7 +69,6 @@ public function register(){
     $this->content = $this->render('views/users/register.php');
     require_once 'views/layouts/main_login.php';
     }}
-    //index.php?controller=user&action=login
     public function login(){
 
     echo '<pre>';
